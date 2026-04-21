@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dose Alométrica — Animais Silvestres</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #111a14;
+  --surface: #18261c;
+  --surface2: #1f3025;
+  --border: #2a3d2e;
+  --green: #6fcf7e;
+  --green-dim: #1a3d22;
+  --yellow: #f0c040;
+  --red: #e07070;
+  --blue: #7ab8e8;
+  --purple: #b39ddb;
+  --text: #ddeedd;
+  --muted: #7a9880;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  padding: 20px 14px 60px;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(111,207,126,0.06), transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+.wrap { max-width: 740px; margin: 0 auto; position: relative; z-index: 1; }
+
+header { text-align: center; padding: 28px 0 22px; margin-bottom: 28px; border-bottom: 1px solid var(--border); }
+.eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--green); margin-bottom: 10px; }
+h1 { font-family: 'DM Serif Display', serif; font-size: clamp(26px, 7vw, 42px); color: #fff; line-height: 1.1; }
+h1 em { color: var(--green); font-style: italic; }
+.subtitle { margin-top: 8px; color: var(--muted); font-size: 13px; }
+
+.method-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 20px; margin-bottom: 24px; }
+.method-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--green); margin-bottom: 16px; }
+.steps-row { display: flex; flex-direction: column; gap: 9px; }
+.method-step { display: flex; align-items: flex-start; gap: 14px; background: var(--bg); border-radius: 8px; padding: 12px 14px; border-left: 3px solid var(--border); }
+.method-step.hl { border-left-color: var(--yellow); }
+.step-num { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--green); line-height: 1; min-width: 22px; }
+.method-step.hl .step-num { color: var(--yellow); }
+.step-name { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+.step-formula { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--yellow); }
+.step-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+.tabs { display: flex; gap: 3px; background: var(--surface); border-radius: 10px; padding: 4px; border: 1px solid var(--border); margin-bottom: 18px; }
+.tab { flex: 1; background: none; border: none; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.4px; padding: 9px 4px; border-radius: 7px; cursor: pointer; transition: all 0.2s; text-align: center; }
+.tab.active { background: var(--green-dim); color: var(--green); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 20px; margin-bottom: 18px; }
+.card-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--blue); margin-bottom: 18px; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+@media (max-width: 460px) { .row2 { grid-template-columns: 1fr; } }
+.field { display: flex; flex-direction: column; gap: 5px; }
+label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+input, select { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 14px; padding: 10px 12px; outline: none; transition: border-color 0.2s; width: 100%; }
+input:focus, select:focus { border-color: var(--green); }
+select option { background: var(--surface2); }
+.hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.btn-primary { width: 100%; background: var(--green); color: #0d1a10; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; padding: 13px; cursor: pointer; margin-top: 10px; transition: opacity 0.2s, transform 0.1s; }
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:active { transform: scale(0.98); }
+
+.result-area { display: none; margin-top: 18px; }
+.result-area.show { display: block; animation: fadeIn 0.3s ease; }
+.result-final { background: var(--green-dim); border: 1px solid var(--green); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; text-align: center; }
+.result-label-sm { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--green); margin-bottom: 6px; }
+.result-big { font-family: 'DM Serif Display', serif; font-size: 34px; color: #fff; }
+.result-big span { font-size: 18px; color: var(--green); }
+
+.steps-calc { background: var(--bg); border-radius: 8px; padding: 14px; }
+.steps-calc-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.cs { font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.8; padding: 5px 8px; border-left: 2px solid var(--border); margin-bottom: 5px; color: var(--text); }
+.cs .n { color: var(--yellow); }
+.cs .v { color: var(--green); font-weight: 600; }
+.cs .op { color: var(--blue); }
+.cs .fin { color: #fff; font-weight: 600; }
+.cs .src { display: block; font-size: 11px; color: var(--muted); margin: 2px 0 3px; font-style: italic; }
+.cs .why { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; border-top: 1px dashed rgba(122,152,128,0.3); padding-top: 4px; font-family: 'DM Sans', sans-serif; font-style: normal; line-height: 1.5; }
+.cs-convert { border-left-color: var(--green) !important; background: rgba(111,207,126,0.04); margin-top: 4px; }
+
+.interval-area { display: none; margin-top: 14px; }
+.interval-area.show { display: block; }
+.interval-result { background: var(--bg); border-radius: 8px; padding: 12px 14px; border-left: 3px solid var(--purple); }
+.interval-val { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--purple); }
+
+.quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.score-pill { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--yellow); background: var(--bg); border-radius: 20px; padding: 3px 12px; border: 1px solid var(--border); }
+.progress-bar { height: 3px; background: var(--border); border-radius: 3px; margin-bottom: 22px; }
+.progress-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.4s; }
+.q-context { background: var(--bg); border-radius: 8px; padding: 12px 14px; font-size: 13px; color: var(--muted); margin-bottom: 14px; border-left: 3px solid var(--yellow); line-height: 1.6; }
+.q-context strong { color: var(--yellow); }
+.q-text { font-size: 14px; line-height: 1.7; margin-bottom: 18px; color: var(--text); }
+.q-text strong { color: #fff; font-weight: 700; }
+.answer-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: flex-end; }
+.answer-row input { flex: 1; min-width: 130px; font-size: 16px; padding: 11px 13px; }
+.btn-check { background: var(--blue); color: #0d1a25; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700; padding: 11px 20px; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
+.btn-check:hover { opacity: 0.85; }
+.feedback { padding: 12px 14px; border-radius: 8px; font-size: 13px; line-height: 1.6; display: none; margin-bottom: 12px; }
+.feedback.ok { display: block; background: rgba(111,207,126,0.08); border: 1px solid #1a4022; color: var(--green); }
+.feedback.err { display: block; background: rgba(224,112,112,0.08); border: 1px solid #4a1a1a; color: var(--red); }
+.fb-steps { font-family: 'JetBrains Mono', monospace; font-size: 11px; margin-top: 10px; color: var(--text); line-height: 2.2; }
+.btn-next { display: none; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700; padding: 10px 20px; cursor: pointer; transition: border-color 0.2s; }
+.btn-next.show { display: inline-block; }
+.btn-next:hover { border-color: var(--green); color: var(--green); }
+
+.finish { text-align: center; padding: 28px 16px; }
+.finish-score { font-family: 'DM Serif Display', serif; font-size: 58px; color: var(--green); }
+.finish-msg { color: var(--muted); margin-top: 8px; font-size: 14px; }
+.btn-restart { margin-top: 22px; background: none; border: 1px solid var(--green); color: var(--green); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700; padding: 11px 26px; cursor: pointer; transition: background 0.2s; }
+.btn-restart:hover { background: rgba(111,207,126,0.08); }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+td { padding: 9px 10px; border-bottom: 1px solid rgba(42,61,46,0.6); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+td:first-child { font-weight: 700; color: var(--yellow); }
+.kv { font-family: 'JetBrains Mono', monospace; color: var(--green); background: var(--bg); border-radius: 4px; padding: 2px 7px; border: 1px solid var(--border); font-size: 12px; }
+.tip { background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.2); border-radius: 8px; padding: 13px 15px; font-size: 13px; line-height: 1.7; margin-top: 14px; color: var(--text); }
+.tip strong { color: var(--yellow); }
+.method-mini { background: var(--bg); border-radius: 8px; padding: 14px; margin-top: 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 2.4; }
+.yn { color: var(--yellow); }
+.gn { color: var(--green); }
+.sep { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Farmacologia Veterinária · Animais Silvestres</div>
+  <h1>Dose <em>Alométrica</em></h1>
+  <p class="subtitle">Método via TMB (Hainsworth) · Calculadora + Exercícios</p>
+</header>
+
+<div class="method-box">
+  <div class="method-title">// Os 4 passos do método (slide 8)</div>
+  <div class="steps-row">
+    <div class="method-step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-name">Dose Total do modelo</div>
+        <div class="step-formula">Dose_total = dose(mg/kg) × Peso_modelo</div>
+        <div class="step-desc">Converte mg/kg → mg totais para o animal de referência</div>
+      </div>
+    </div>
+    <div class="method-step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-name">TMB do modelo e do alvo</div>
+        <div class="step-formula">TMB = K × M^0,75 &nbsp;(Kcal/24h)</div>
+        <div class="step-desc">K vem da tabela de Hainsworth · M = massa em kg</div>
+      </div>
+    </div>
+    <div class="method-step hl">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-name">Dose por Kcal ← aqui ela trava</div>
+        <div class="step-formula">Dose/Kcal = Dose_total_modelo ÷ TMB_modelo</div>
+        <div class="step-desc">Normaliza a dose pela "energia" do modelo — mg por cada Kcal/24h</div>
+      </div>
+    </div>
+    <div class="method-step hl">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-name">Dose Alométrica ← resultado final</div>
+        <div class="step-formula">Dose_alvo(mg) = Dose/Kcal × TMB_alvo</div>
+        <div class="step-desc">Reescala para o metabolismo do animal-alvo silvestre</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('calc')">🧮 Calculadora</button>
+  <button class="tab" onclick="switchTab('quiz')">📝 Exercícios</button>
+  <button class="tab" onclick="switchTab('ref')">📋 Referência</button>
+</div>
+
+<!-- CALCULADORA -->
+<div class="tab-content active" id="tab-calc">
+  <div class="card">
+    <div class="card-title">// Animal modelo (referência)</div>
+    <div class="row2">
+      <div class="field">
+        <label>Grupo do modelo</label>
+        <select id="grpM" onchange="setK('grpM','kM')">
+          <option value="">Selecionar...</option>
+          <option value="129">Aves Passeriformes (K=129)</option>
+          <option value="78">Aves Não-Passeriformes (K=78)</option>
+          <option value="70">Mamíferos Placentados (K=70)</option>
+          <option value="49">Marsupiais/Xenarthra/Monotremata (K=49)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Constante K do modelo</label>
+        <input type="number" id="kM" placeholder="ex: 70" step="1">
+        <div class="hint">Preenche ao escolher o grupo acima</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Modelo padrão</label>
+        <select id="modPad" onchange="fillModelo()">
+          <option value="">Selecionar...</option>
+          <option value="cao">Cão — 10 kg</option>
+          <option value="gato">Gato — 4 kg</option>
+          <option value="porco">Porco — 100 kg</option>
+          <option value="cavalo">Cavalo/Vaca — 500 kg</option>
+          <option value="homem">Homem — 70 kg</option>
+          <option value="custom">Outro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Peso do modelo (kg)</label>
+        <input type="number" id="pM" placeholder="ex: 10" step="0.01">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Dose no modelo (mg/kg)</label>
+        <input type="number" id="dM" placeholder="ex: 20" step="0.001">
+      </div>
+      <div class="field">
+        <label>Intervalo no modelo (h)</label>
+        <input type="number" id="intM" placeholder="ex: 24" step="0.5">
+        <div class="hint">Opcional — calcula intervalo no alvo</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">// Animal alvo (silvestre)</div>
+    <div class="row2">
+      <div class="field">
+        <label>Grupo do alvo</label>
+        <select id="grpA" onchange="setK('grpA','kA')">
+          <option value="">Selecionar...</option>
+          <option value="129">Aves Passeriformes (K=129)</option>
+          <option value="78">Aves Não-Passeriformes (K=78)</option>
+          <option value="70">Mamíferos Placentados (K=70)</option>
+          <option value="49">Marsupiais/Xenarthra/Monotremata (K=49)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Constante K do alvo</label>
+        <input type="number" id="kA" placeholder="ex: 78" step="1">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Nome / espécie do alvo</label>
+        <input type="text" id="nomeA" placeholder="ex: Crax fasciolata" style="font-family:'DM Sans',sans-serif;font-size:13px;">
+      </div>
+      <div class="field">
+        <label>Peso do alvo (kg)</label>
+        <input type="number" id="pA" placeholder="ex: 2.6" step="0.01">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="calcular()">Calcular dose alométrica →</button>
+  </div>
+
+  <div class="result-area" id="resArea">
+    <div class="result-final">
+      <div class="result-label-sm">// Dose alométrica</div>
+      <div class="result-big" id="resBig">—</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="resSub"></div>
+    </div>
+    <div class="steps-calc">
+      <div class="steps-calc-title">// Passo a passo completo</div>
+      <div id="stepsDiv"></div>
+    </div>
+    <div class="interval-area" id="intArea">
+      <div class="interval-result">
+        <div class="result-label-sm" style="color:var(--purple)">// Intervalo no alvo</div>
+        <div class="interval-val" id="intVal">—</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">horas entre doses</div>
+        <div id="intSteps" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);line-height:2;margin-top:10px;border-top:1px solid var(--border);padding-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXERCÍCIOS -->
+<div class="tab-content" id="tab-quiz">
+  <div class="card" id="quizCard">
+    <div class="quiz-header">
+      <div class="card-title" style="margin:0">// Exercícios · Animais Silvestres</div>
+      <div class="score-pill" id="scorePill">0 / 0</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+    <div id="quizBody"></div>
+  </div>
+</div>
+
+<!-- REFERÊNCIA -->
+<div class="tab-content" id="tab-ref">
+  <div class="card">
+    <div class="card-title">// Tabela de Hainsworth (1981)</div>
+    <table>
+      <thead><tr><th>Grupo Animal</th><th>K</th><th>Temp. corporal</th></tr></thead>
+      <tbody>
+        <tr><td>Aves Passeriformes</td><td><span class="kv">129</span></td><td>42 °C</td></tr>
+        <tr><td>Aves Não-Passeriformes</td><td><span class="kv">78</span></td><td>40 °C</td></tr>
+        <tr><td>Mamíferos Placentados</td><td><span class="kv">70</span></td><td>37 °C</td></tr>
+        <tr><td>Marsupiais / Xenarthra / Monotremata</td><td><span class="kv">49</span></td><td>35 °C</td></tr>
+      </tbody>
+    </table>
+    <div class="tip">
+      <strong>📌 Dica de prova:</strong> Identifique o grupo do silvestre → pegue o K certo.<br>
+      <em>Crax fasciolata</em> (mutum) = Ave Não-Passeriforme → K=78.<br>
+      <em>Speothos venaticus</em> (cachorro-vinagre) = Mamífero Placentado → K=70, modelo = Cão.
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">// Modelos metabólicos padrão</div>
+    <table>
+      <thead><tr><th>Animal</th><th>Peso padrão</th><th>K</th></tr></thead>
+      <tbody>
+        <tr><td>Cão</td><td>10 kg</td><td><span class="kv">70</span></td></tr>
+        <tr><td>Gato</td><td>4 kg</td><td><span class="kv">70</span></td></tr>
+        <tr><td>Porco</td><td>100 kg</td><td><span class="kv">70</span></td></tr>
+        <tr><td>Cavalo / Vaca</td><td>500 kg</td><td><span class="kv">70</span></td></tr>
+        <tr><td>Homem</td><td>70 kg</td><td><span class="kv">70</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-title">// Todas as fórmulas</div>
+    <div class="method-mini">
+      <span class="yn">TMB</span> = K × M<sup>0,75</sup> &nbsp;<span class="sep">← Kcal/24h</span><br>
+      <span class="yn">Dose_total_modelo</span> = dose(mg/kg) × Peso_modelo<br>
+      <span class="yn">Dose/Kcal</span> = Dose_total_modelo ÷ TMB_modelo<br>
+      <span class="gn">Dose_alvo (mg)</span> = Dose/Kcal × TMB_alvo<br>
+      <span class="gn">Dose_alvo (mg/kg)</span> = Dose_alvo(mg) ÷ Peso_alvo<br><br>
+      <span class="yn">TME</span> = TMB ÷ M<br>
+      <span class="gn">Intervalo_alvo</span> = (TME_modelo × Intervalo_modelo) ÷ TME_alvo
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function setK(selId, inpId) {
+  const v = document.getElementById(selId).value;
+  if (v) document.getElementById(inpId).value = v;
+}
+const modPesos = {cao:10, gato:4, porco:100, cavalo:500, homem:70};
+function fillModelo() {
+  const v = document.getElementById('modPad').value;
+  if (v && v!=='custom' && modPesos[v]) {
+    document.getElementById('pM').value = modPesos[v];
+    document.getElementById('grpM').value = '70';
+    document.getElementById('kM').value = '70';
+  }
+}
+function switchTab(t) {
+  ['calc','quiz','ref'].forEach((n,i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', n===t);
+    document.getElementById('tab-'+n).classList.toggle('active', n===t);
+  });
+}
+function fmt(n,d=4){ return parseFloat(n.toFixed(d)); }
+function tmb(K,M){ return K*Math.pow(M,0.75); }
+
+function calcular() {
+  const kMv=parseFloat(document.getElementById('kM').value);
+  const pMv=parseFloat(document.getElementById('pM').value);
+  const dMv=parseFloat(document.getElementById('dM').value);
+  const kAv=parseFloat(document.getElementById('kA').value);
+  const pAv=parseFloat(document.getElementById('pA').value);
+  const intMv=parseFloat(document.getElementById('intM').value);
+  const nome=document.getElementById('nomeA').value||'Animal alvo';
+  if([kMv,pMv,dMv,kAv,pAv].some(isNaN)){alert('Preencha todos os campos!');return;}
+  const dt=dMv*pMv;
+  const tmbM=tmb(kMv,pMv);
+  const tmbA=tmb(kAv,pAv);
+  const dkc=dt/tmbM;
+  const aMg=dkc*tmbA;
+  const aMgkg=aMg/pAv;
+  document.getElementById('resBig').innerHTML=`${fmt(aMg,4)} <span>mg total</span>`;
+  document.getElementById('resSub').textContent=`= ${fmt(aMgkg,4)} mg/kg · ${nome} (${pAv} kg)`;
+  document.getElementById('stepsDiv').innerHTML=[
+    `<div class="cs"><span class="n">1.</span> Dose total do modelo
+  <span class="src">← dose digitada (${fmt(dMv)} mg/kg) × peso do modelo (${fmt(pMv)} kg)</span>
+  <span class="op">${fmt(dMv)} × ${fmt(pMv)}</span> = <span class="v">${fmt(dt,4)} mg</span>
+  <span class="why">Converte mg/kg em mg absolutos — quanto o animal modelo recebe no total</span></div>`,
+
+    `<div class="cs"><span class="n">2a.</span> TMB do modelo
+  <span class="src">← K do modelo (${kMv}) × peso do modelo (${fmt(pMv)} kg)^0,75</span>
+  <span class="op">${kMv} × ${fmt(pMv)}^0,75</span> = <span class="v">${fmt(tmbM,4)} Kcal/24h</span>
+  <span class="why">Energia que o modelo gasta por dia — "régua metabólica" de referência</span></div>`,
+
+    `<div class="cs"><span class="n">2b.</span> TMB do alvo
+  <span class="src">← K do alvo (${kAv}) × peso do alvo (${fmt(pAv)} kg)^0,75</span>
+  <span class="op">${kAv} × ${fmt(pAv)}^0,75</span> = <span class="v">${fmt(tmbA,4)} Kcal/24h</span>
+  <span class="why">Energia que o animal-alvo gasta por dia — escala para onde vamos extrapolar</span></div>`,
+
+    `<div class="cs"><span class="n">3.</span> Dose por Kcal
+  <span class="src">← dose total do modelo (passo 1) ÷ TMB do modelo (passo 2a)</span>
+  <span class="op">${fmt(dt,4)} ÷ ${fmt(tmbM,4)}</span> = <span class="v">${fmt(dkc,6)} mg/Kcal</span>
+  <span class="why">Quanto mg o modelo precisa para cada Kcal que ele gasta — normaliza a dose pelo metabolismo</span></div>`,
+
+    `<div class="cs"><span class="n">4.</span> Dose alométrica
+  <span class="src">← Dose/Kcal (passo 3) × TMB do alvo (passo 2b)</span>
+  <span class="op">${fmt(dkc,6)} × ${fmt(tmbA,4)}</span> = <span class="v">${fmt(aMg,4)} mg</span>
+  <span class="why">Multiplica pela energia do alvo: "se ele gasta ${fmt(tmbA,4)} Kcal/dia, precisa de ${fmt(aMg,4)} mg no total"</span></div>`,
+
+    `<div class="cs cs-convert"><span class="n">↳</span> Convertendo para mg/kg
+  <span class="src">← dose total do alvo (${fmt(aMg,4)} mg) ÷ peso do alvo (${fmt(pAv)} kg)</span>
+  <span class="op">${fmt(aMg,4)} ÷ ${fmt(pAv)}</span> = <span class="fin">${fmt(aMgkg,4)} mg/kg</span>
+  <span class="why">A dose em mg/kg é o que se anota na ficha e usa para comparar com a literatura — é o resultado prático</span></div>`,
+  ].join('');
+  if(!isNaN(intMv)&&intMv>0){
+    const tmeM=tmbM/pMv, tmeA=tmbA/pAv, intA=(tmeM*intMv)/tmeA;
+    document.getElementById('intVal').textContent=fmt(intA,2)+'h';
+    document.getElementById('intSteps').innerHTML=
+      `TME modelo = ${fmt(tmbM,4)} ÷ ${pMv} = ${fmt(tmeM,4)} Kcal/24h/kg<br>`+
+      `TME alvo = ${fmt(tmbA,4)} ÷ ${pAv} = ${fmt(tmeA,4)} Kcal/24h/kg<br>`+
+      `Intervalo_alvo = (${fmt(tmeM,4)} × ${intMv}h) ÷ ${fmt(tmeA,4)} = <strong>${fmt(intA,2)}h</strong>`;
+    document.getElementById('intArea').classList.add('show');
+  } else { document.getElementById('intArea').classList.remove('show'); }
+  document.getElementById('resArea').classList.add('show');
+}
+
+// QUIZ
+const Qs=[
+  {
+    ctx:'Speothos venaticus (cachorro-vinagre) · Mamífero Placentado · Maxflor®',
+    q:`O <strong>Speothos venaticus</strong> pesa <strong>8 kg</strong>. Dose de referência: <strong>10 mg/kg</strong> em cão (10 kg, K=70). K do alvo também é 70. Calcule a <strong>dose alométrica em mg total</strong>.`,
+    kM:70,pM:10,dM:10,kA:70,pA:8, type:'mg'
+  },
+  {
+    ctx:'Crax fasciolata (mutum) · Ave Não-Passeriforme (K=78) · Terramicina LA® · Dose cão: 20 mg/kg',
+    q:`O <strong>Crax fasciolata</strong> pesa <strong>2,6 kg</strong>. Dose: <strong>20 mg/kg</strong> em cão (10 kg, K=70). Alvo: Ave Não-Passeriforme, K=78. Dose alométrica em <strong>mg total</strong>?`,
+    kM:70,pM:10,dM:20,kA:78,pA:2.6, type:'mg'
+  },
+  {
+    ctx:'Mesmo caso do Crax — agora convertendo para mg/kg',
+    q:`Com os dados do <strong>Crax fasciolata</strong> (2,6 kg, K=78, modelo cão K=70 / 20 mg/kg): qual a dose em <strong>mg/kg</strong> para o alvo?`,
+    kM:70,pM:10,dM:20,kA:78,pA:2.6, type:'mgkg'
+  },
+  {
+    ctx:'Amazona amazonica (papagaio-do-mangue) · Ave Não-Passeriforme (K=78)',
+    q:`<strong>Amazona amazonica</strong>, 0,4 kg, K=78. Dose de <strong>5 mg/kg</strong> em cão (10 kg, K=70). Dose alométrica em <strong>mg total</strong>?`,
+    kM:70,pM:10,dM:5,kA:78,pA:0.4, type:'mg'
+  },
+  {
+    ctx:'Cálculo de intervalo · Speothos venaticus',
+    q:`Cão (10 kg, K=70) recebe o medicamento a cada <strong>24 horas</strong>. Para o <strong>Speothos venaticus</strong> (8 kg, K=70), qual o intervalo em horas? (1 casa decimal)`,
+    kM:70,pM:10,dM:0,kA:70,pA:8, type:'interval', intM:24
+  },
+];
+
+let qi=0,sc=0,ans=false;
+
+function getAns(q){
+  const tmbM=tmb(q.kM,q.pM), tmbA=tmb(q.kA,q.pA);
+  if(q.type==='interval'){
+    const tmeM=tmbM/q.pM, tmeA=tmbA/q.pA;
+    return (tmeM*q.intM)/tmeA;
+  }
+  const dt=q.dM*q.pM, dkc=dt/tmbM, aMg=dkc*tmbA;
+  return q.type==='mgkg' ? aMg/q.pA : aMg;
+}
+function getSteps(q){
+  const tmbM=tmb(q.kM,q.pM), tmbA=tmb(q.kA,q.pA);
+  if(q.type==='interval'){
+    const tmeM=tmbM/q.pM, tmeA=tmbA/q.pA, intA=(tmeM*q.intM)/tmeA;
+    return `TMB modelo = ${q.kM} × ${q.pM}^0,75 = ${fmt(tmbM,4)} Kcal/24h<br>`+
+           `TMB alvo = ${q.kA} × ${q.pA}^0,75 = ${fmt(tmbA,4)} Kcal/24h<br>`+
+           `TME modelo = ${fmt(tmbM,4)} ÷ ${q.pM} = ${fmt(tmeM,4)}<br>`+
+           `TME alvo = ${fmt(tmbA,4)} ÷ ${q.pA} = ${fmt(tmeA,4)}<br>`+
+           `Intervalo_alvo = (${fmt(tmeM,4)} × ${q.intM}) ÷ ${fmt(tmeA,4)} = <strong>${fmt(intA,2)}h</strong>`;
+  }
+  const dt=q.dM*q.pM, dkc=dt/tmbM, aMg=dkc*tmbA, aMgkg=aMg/q.pA;
+  return `1. Dose total modelo: ${fmt(q.dM)} × ${q.pM} = ${fmt(dt,4)} mg<br>`+
+         `2a. TMB modelo: ${q.kM} × ${q.pM}^0,75 = ${fmt(tmbM,4)} Kcal/24h<br>`+
+         `2b. TMB alvo: ${q.kA} × ${q.pA}^0,75 = ${fmt(tmbA,4)} Kcal/24h<br>`+
+         `3. Dose/Kcal: ${fmt(dt,4)} ÷ ${fmt(tmbM,4)} = ${fmt(dkc,6)} mg/Kcal<br>`+
+         `4. Dose_alvo: ${fmt(dkc,6)} × ${fmt(tmbA,4)} = <strong>${fmt(aMg,4)} mg</strong><br>`+
+         (q.type==='mgkg'?`   em mg/kg: ${fmt(aMg,4)} ÷ ${q.pA} = <strong>${fmt(aMgkg,4)} mg/kg</strong>`:'');
+}
+
+function renderQ(){
+  ans=false;
+  const q=Qs[qi];
+  const pct=(qi/Qs.length)*100;
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('scorePill').textContent=`${sc} / ${qi}`;
+  const unit=q.type==='interval'?'horas':q.type==='mgkg'?'mg/kg':'mg total';
+  document.getElementById('quizBody').innerHTML=`
+    <div class="q-context"><strong>Contexto:</strong> ${q.ctx}</div>
+    <p class="q-text"><strong>Questão ${qi+1}/${Qs.length}</strong><br><br>${q.q}</p>
+    <div class="answer-row">
+      <input type="number" id="ansInp" placeholder="Sua resposta (${unit})" step="0.0001"
+        onkeydown="if(event.key==='Enter')checkQ()">
+      <button class="btn-check" onclick="checkQ()">Verificar</button>
+    </div>
+    <div class="feedback" id="fb"></div>
+    <button class="btn-next" id="btnN" onclick="nextQ()">
+      ${qi+1<Qs.length?'Próxima →':'Ver resultado →'}
+    </button>`;
+  document.getElementById('ansInp').focus();
+}
+function checkQ(){
+  if(ans)return; ans=true;
+  const q=Qs[qi];
+  const correct=getAns(q);
+  const uv=parseFloat(document.getElementById('ansInp').value);
+  const tol=Math.max(Math.abs(correct)*0.02,0.001);
+  const ok=Math.abs(uv-correct)<=tol;
+  if(ok)sc++;
+  const fb=document.getElementById('fb');
+  fb.className='feedback '+(ok?'ok':'err');
+  fb.innerHTML=(ok
+    ?`✅ <strong>Correto!</strong> A resposta é <strong>${fmt(correct,4)}</strong>`
+    :`❌ <strong>Não desta vez.</strong> Você colocou ${isNaN(uv)?'—':fmt(uv,4)}, mas a resposta é <strong>${fmt(correct,4)}</strong>`)+
+    `<div class="fb-steps">${getSteps(q)}</div>`;
+  document.getElementById('scorePill').textContent=`${sc} / ${qi+1}`;
+  document.getElementById('btnN').classList.add('show');
+}
+function nextQ(){
+  qi++;
+  if(qi>=Qs.length){showFinish();return;}
+  renderQ();
+}
+function showFinish(){
+  document.getElementById('progFill').style.width='100%';
+  const pct=Math.round((sc/Qs.length)*100);
+  const msg=pct===100?'🏆 Arrasou! Pode ir na prova!':pct>=60?'👍 Bom! Revise os passos 3 e 4 se travou.':'📚 Use a calculadora para entender cada passo e tente de novo.';
+  document.getElementById('quizCard').innerHTML=`
+    <div class="finish">
+      <div class="result-label-sm">// Resultado</div>
+      <div class="finish-score">${sc}/${Qs.length}</div>
+      <div class="finish-msg">${pct}% · ${msg}</div>
+      <button class="btn-restart" onclick="restartQ()">Tentar novamente</button>
+    </div>`;
+}
+function restartQ(){
+  qi=0;sc=0;
+  document.getElementById('quizCard').innerHTML=`
+    <div class="quiz-header">
+      <div class="card-title" style="margin:0">// Exercícios · Animais Silvestres</div>
+      <div class="score-pill" id="scorePill">0 / 0</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+    <div id="quizBody"></div>`;
+  renderQ();
+}
+renderQ();
+</script>
+</body>
+</html>
