@@ -2,6 +2,7 @@ import { difficultyOptions, quizQuestionBank } from "../data/quizQuestions";
 
 const HISTORY_STORAGE_KEY = "alometria-simulations";
 const ACTIVE_STORAGE_KEY = "alometria-active-simulation";
+export const MIN_SIMULATION_QUESTIONS = 2;
 
 function hasBrowserStorage() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -88,8 +89,8 @@ export function createSimulation({ difficulty, questionCount }) {
   const startedAt = new Date().toISOString();
   const pool = getQuestionPool(difficulty);
   const normalizedCount = Math.max(
-    1,
-    Math.min(Number(questionCount) || 1, pool.length),
+    MIN_SIMULATION_QUESTIONS,
+    Math.min(Number(questionCount) || MIN_SIMULATION_QUESTIONS, pool.length),
   );
   const questions = shuffle(pool).slice(0, normalizedCount);
 

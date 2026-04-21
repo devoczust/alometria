@@ -8,6 +8,7 @@ import {
   solveQuizQuestion,
 } from "../utils/alometry";
 import {
+  MIN_SIMULATION_QUESTIONS,
   buildCompletedSimulation,
   clearActiveSimulation,
   createSimulation,
@@ -112,7 +113,10 @@ export default function QuizTab() {
   });
   const [config, setConfig] = useState({
     difficulty: "mixed",
-    questionCount: Math.min(5, getAvailableQuestionCount("mixed")),
+    questionCount: Math.max(
+      MIN_SIMULATION_QUESTIONS,
+      Math.min(5, getAvailableQuestionCount("mixed")),
+    ),
   });
   const [uiError, setUiError] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(() =>
@@ -150,10 +154,15 @@ export default function QuizTab() {
   }, [history]);
 
   useEffect(() => {
-    if (config.questionCount > availableCount) {
+    const normalizedCount = Math.max(
+      MIN_SIMULATION_QUESTIONS,
+      Math.min(Number(config.questionCount) || MIN_SIMULATION_QUESTIONS, availableCount),
+    );
+
+    if (Number(config.questionCount) !== normalizedCount) {
       setConfig((current) => ({
         ...current,
-        questionCount: availableCount,
+        questionCount: normalizedCount,
       }));
     }
   }, [availableCount, config.questionCount]);
@@ -180,8 +189,8 @@ export default function QuizTab() {
 
   function handleStartSimulation() {
     const questionCount = Math.max(
-      1,
-      Math.min(Number(config.questionCount) || 1, availableCount),
+      MIN_SIMULATION_QUESTIONS,
+      Math.min(Number(config.questionCount) || MIN_SIMULATION_QUESTIONS, availableCount),
     );
     const simulation = createSimulation({
       difficulty: config.difficulty,
@@ -316,7 +325,7 @@ export default function QuizTab() {
                 <label>Quantidade de exercicios</label>
                 <input
                   type="number"
-                  min="1"
+                  min={MIN_SIMULATION_QUESTIONS}
                   max={availableCount}
                   value={config.questionCount}
                   onChange={(event) =>
@@ -327,7 +336,8 @@ export default function QuizTab() {
                   }
                 />
                 <div className="hint">
-                  Ate {availableCount} questoes disponiveis nessa dificuldade.
+                  Escolha entre {MIN_SIMULATION_QUESTIONS} e {availableCount} questoes
+                  nessa dificuldade.
                 </div>
               </div>
 
@@ -336,8 +346,11 @@ export default function QuizTab() {
                 <strong>{getDifficultyLabel(config.difficulty)}</strong>
                 <small>
                   {Math.max(
-                    1,
-                    Math.min(Number(config.questionCount) || 1, availableCount),
+                    MIN_SIMULATION_QUESTIONS,
+                    Math.min(
+                      Number(config.questionCount) || MIN_SIMULATION_QUESTIONS,
+                      availableCount,
+                    ),
                   )}{" "}
                   questoes
                 </small>
