@@ -5,243 +5,314 @@ export const difficultyOptions = [
   { value: "hard", label: "Dificil" },
 ];
 
+const referenceModels = [
+  { name: "gato", weight: 4, k: 70 },
+  { name: "cao", weight: 10, k: 70 },
+  { name: "homem", weight: 70, k: 70 },
+  { name: "porco", weight: 100, k: 70 },
+  { name: "cavalo", weight: 500, k: 70 },
+];
+
+function pickClosestModel(targetWeight) {
+  return referenceModels.reduce((closest, current) => {
+    if (!closest) {
+      return current;
+    }
+
+    const currentDistance = Math.abs(current.weight - targetWeight);
+    const closestDistance = Math.abs(closest.weight - targetWeight);
+    return currentDistance < closestDistance ? current : closest;
+  }, null);
+}
+
+function formatAnimal(scientificName, commonName) {
+  return commonName
+    ? `${scientificName} (${commonName})`
+    : scientificName;
+}
+
+function buildContext(question) {
+  return [
+    question.medication,
+    formatAnimal(question.targetScientificName, question.targetCommonName),
+    question.targetGroupLabel,
+    `modelo ${question.modelName}`,
+  ].join(" · ");
+}
+
+function buildPrompt(question) {
+  const targetAnimal = formatAnimal(
+    question.targetScientificName,
+    question.targetCommonName,
+  );
+  const modelAnimal = `${question.modelName} (${question.pM} kg, K=${question.kM})`;
+
+  if (question.type === "interval") {
+    return [
+      `Medicamento: ${question.medication}.`,
+      `Animal alvo: ${targetAnimal}, com ${question.pA} kg e K=${question.kA}.`,
+      `Animal modelo escolhido por proximidade: ${modelAnimal}.`,
+      `No modelo, o medicamento e administrado a cada ${question.intM} horas.`,
+      "Calcule o intervalo alometrico no alvo em horas. Use 1 casa decimal.",
+    ].join(" ");
+  }
+
+  const outputLabel =
+    question.type === "mgkg"
+      ? "Calcule a dose final em mg/kg para o alvo."
+      : "Calcule a dose alometrica em mg total para o alvo.";
+
+  return [
+    `Medicamento: ${question.medication}.`,
+    `Animal alvo: ${targetAnimal}, com ${question.pA} kg e K=${question.kA}.`,
+    `Animal modelo escolhido por proximidade: ${modelAnimal}.`,
+    `Dose de referencia no modelo: ${question.dM} mg/kg.`,
+    outputLabel,
+  ].join(" ");
+}
+
+function createQuestion(data) {
+  const model = pickClosestModel(data.pA);
+
+  return {
+    ...data,
+    modelName: model.name,
+    kM: model.k,
+    pM: model.weight,
+    context: buildContext({
+      ...data,
+      modelName: model.name,
+      kM: model.k,
+      pM: model.weight,
+    }),
+    prompt: buildPrompt({
+      ...data,
+      modelName: model.name,
+      kM: model.k,
+      pM: model.weight,
+    }),
+  };
+}
+
 export const quizQuestionBank = [
-  {
+  createQuestion({
     id: "easy-speothos-mg",
     difficulty: "easy",
-    context: "Speothos venaticus · mamifero placentado · modelo cao",
-    prompt:
-      "O Speothos venaticus pesa 8 kg. Dose de referencia: 10 mg/kg em cao (10 kg, K=70). O alvo tambem tem K=70. Calcule a dose alometrica em mg total.",
-    kM: 70,
-    pM: 10,
+    medication: "meloxicam",
+    targetScientificName: "Speothos venaticus",
+    targetCommonName: "cachorro-vinagre",
+    targetGroupLabel: "mamifero placentado",
     dM: 10,
     kA: 70,
     pA: 8,
     type: "mg",
-  },
-  {
+  }),
+  createQuestion({
     id: "easy-amazona-mg",
     difficulty: "easy",
-    context: "Amazona amazonica · ave nao-passeriforme",
-    prompt:
-      "A Amazona amazonica pesa 0,4 kg e tem K=78. A dose no modelo cao (10 kg, K=70) e 5 mg/kg. Qual e a dose alometrica em mg total?",
-    kM: 70,
-    pM: 10,
+    medication: "enrofloxacina",
+    targetScientificName: "Amazona amazonica",
+    targetCommonName: "papagaio-do-mangue",
+    targetGroupLabel: "ave nao-passeriforme",
     dM: 5,
     kA: 78,
     pA: 0.4,
     type: "mg",
-  },
-  {
+  }),
+  createQuestion({
     id: "easy-coendou-mg",
     difficulty: "easy",
-    context: "Coendou prehensilis · mamifero placentado",
-    prompt:
-      "Um Coendou prehensilis pesa 1,8 kg. O modelo e um cao de 10 kg, K=70, com dose de 8 mg/kg. O alvo tambem usa K=70. Qual e a dose alometrica em mg total?",
-    kM: 70,
-    pM: 10,
+    medication: "cetoprofeno",
+    targetScientificName: "Coendou prehensilis",
+    targetCommonName: "ourico-cacheiro",
+    targetGroupLabel: "mamifero placentado",
     dM: 8,
     kA: 70,
     pA: 1.8,
     type: "mg",
-  },
-  {
+  }),
+  createQuestion({
     id: "easy-speothos-interval",
     difficulty: "easy",
-    context: "Speothos venaticus · calculo de intervalo",
-    prompt:
-      "O cao modelo (10 kg, K=70) recebe o medicamento a cada 24 horas. Para o Speothos venaticus (8 kg, K=70), qual e o intervalo em horas? Use 1 casa decimal.",
-    kM: 70,
-    pM: 10,
+    medication: "tramadol",
+    targetScientificName: "Speothos venaticus",
+    targetCommonName: "cachorro-vinagre",
+    targetGroupLabel: "calculo de intervalo",
     dM: 0,
     kA: 70,
     pA: 8,
     intM: 24,
     type: "interval",
-  },
-  {
+  }),
+  createQuestion({
     id: "easy-mazama-mg",
     difficulty: "easy",
-    context: "Mazama gouazoubira · mamifero placentado",
-    prompt:
-      "Uma Mazama gouazoubira pesa 17 kg. O modelo e um cao de 10 kg, K=70, com dose de 6 mg/kg. O alvo tambem usa K=70. Qual e a dose alometrica em mg total?",
-    kM: 70,
-    pM: 10,
+    medication: "amoxicilina",
+    targetScientificName: "Mazama gouazoubira",
+    targetCommonName: "veado-catingueiro",
+    targetGroupLabel: "mamifero placentado",
     dM: 6,
     kA: 70,
     pA: 17,
     type: "mg",
-  },
-  {
+  }),
+  createQuestion({
     id: "easy-cyanocorax-mg",
     difficulty: "easy",
-    context: "Cyanocorax chrysops · ave nao-passeriforme",
-    prompt:
-      "Um Cyanocorax chrysops pesa 0,23 kg e usa K=78. O modelo e um cao de 10 kg, K=70, com dose de 4 mg/kg. Qual e a dose alometrica em mg total?",
-    kM: 70,
-    pM: 10,
+    medication: "itraconazol",
+    targetScientificName: "Cyanocorax chrysops",
+    targetCommonName: "gralha-do-campo",
+    targetGroupLabel: "ave nao-passeriforme",
     dM: 4,
     kA: 78,
     pA: 0.23,
     type: "mg",
-  },
-  {
+  }),
+  createQuestion({
     id: "medium-crax-mg",
     difficulty: "medium",
-    context: "Crax fasciolata · ave nao-passeriforme",
-    prompt:
-      "O Crax fasciolata pesa 2,6 kg e usa K=78. A dose no modelo cao (10 kg, K=70) e 20 mg/kg. Qual e a dose alometrica em mg total?",
-    kM: 70,
-    pM: 10,
+    medication: "marbofloxacina",
+    targetScientificName: "Crax fasciolata",
+    targetCommonName: "mutum-de-penacho",
+    targetGroupLabel: "ave nao-passeriforme",
     dM: 20,
     kA: 78,
     pA: 2.6,
     type: "mg",
-  },
-  {
+  }),
+  createQuestion({
     id: "medium-crax-mgkg",
     difficulty: "medium",
-    context: "Crax fasciolata · conversao para mg/kg",
-    prompt:
-      "Usando os dados do Crax fasciolata (2,6 kg, K=78, modelo cao com 20 mg/kg), qual e a dose final em mg/kg para o alvo?",
-    kM: 70,
-    pM: 10,
+    medication: "marbofloxacina",
+    targetScientificName: "Crax fasciolata",
+    targetCommonName: "mutum-de-penacho",
+    targetGroupLabel: "conversao para mg/kg",
     dM: 20,
     kA: 78,
     pA: 2.6,
     type: "mgkg",
-  },
-  {
+  }),
+  createQuestion({
     id: "medium-tamandua-mg",
     difficulty: "medium",
-    context: "Tamandua tetradactyla · xenarthra",
-    prompt:
-      "Um Tamandua tetradactyla pesa 5,4 kg e usa K=49. O modelo e um cao de 10 kg, K=70, com dose de 12 mg/kg. Calcule a dose alometrica em mg total.",
-    kM: 70,
-    pM: 10,
+    medication: "metadona",
+    targetScientificName: "Tamandua tetradactyla",
+    targetCommonName: "tamandua-mirim",
+    targetGroupLabel: "xenarthra",
     dM: 12,
     kA: 49,
     pA: 5.4,
     type: "mg",
-  },
-  {
+  }),
+  createQuestion({
     id: "medium-amazona-interval",
     difficulty: "medium",
-    context: "Amazona aestiva · intervalo entre doses",
-    prompt:
-      "O modelo cao (10 kg, K=70) recebe a medicacao a cada 12 horas. Para uma Amazona aestiva de 0,45 kg com K=78, qual deve ser o intervalo em horas? Use 1 casa decimal.",
-    kM: 70,
-    pM: 10,
+    medication: "voriconazol",
+    targetScientificName: "Amazona aestiva",
+    targetCommonName: "papagaio-verdadeiro",
+    targetGroupLabel: "intervalo entre doses",
     dM: 0,
     kA: 78,
     pA: 0.45,
     intM: 12,
     type: "interval",
-  },
-  {
+  }),
+  createQuestion({
     id: "medium-sapajus-mgkg",
     difficulty: "medium",
-    context: "Sapajus apella · primata neotropical",
-    prompt:
-      "Um Sapajus apella pesa 3,1 kg e usa K=70. O modelo e um cao de 10 kg, K=70, com dose de 9 mg/kg. Qual e a dose final em mg/kg para o alvo?",
-    kM: 70,
-    pM: 10,
+    medication: "gabapentina",
+    targetScientificName: "Sapajus apella",
+    targetCommonName: "macaco-prego",
+    targetGroupLabel: "primata neotropical",
     dM: 9,
     kA: 70,
     pA: 3.1,
     type: "mgkg",
-  },
-  {
+  }),
+  createQuestion({
     id: "medium-ara-interval",
     difficulty: "medium",
-    context: "Ara ararauna · intervalo em ave nao-passeriforme",
-    prompt:
-      "O modelo cao (10 kg, K=70) recebe a medicacao a cada 18 horas. Para uma Ara ararauna de 1,1 kg com K=78, qual deve ser o intervalo em horas? Use 1 casa decimal.",
-    kM: 70,
-    pM: 10,
+    medication: "fluconazol",
+    targetScientificName: "Ara ararauna",
+    targetCommonName: "arara-caninde",
+    targetGroupLabel: "intervalo em ave nao-passeriforme",
     dM: 0,
     kA: 78,
     pA: 1.1,
     intM: 18,
     type: "interval",
-  },
-  {
+  }),
+  createQuestion({
     id: "hard-didelphis-mgkg",
     difficulty: "hard",
-    context: "Didelphis albiventris · marsupial · modelo gato",
-    prompt:
-      "Uma Didelphis albiventris pesa 1,2 kg e usa K=49. O modelo e um gato de 4 kg, K=70, com dose de 6 mg/kg. Qual e a dose final em mg/kg para o alvo?",
-    kM: 70,
-    pM: 4,
+    medication: "prednisolona",
+    targetScientificName: "Didelphis albiventris",
+    targetCommonName: "gamba-de-orelha-branca",
+    targetGroupLabel: "marsupial",
     dM: 6,
     kA: 49,
     pA: 1.2,
     type: "mgkg",
-  },
-  {
+  }),
+  createQuestion({
     id: "hard-turdus-mg",
     difficulty: "hard",
-    context: "Turdus rufiventris · ave passeriforme",
-    prompt:
-      "Um Turdus rufiventris pesa 0,075 kg e usa K=129. O modelo e um cao de 10 kg, K=70, com dose de 15 mg/kg. Qual e a dose alometrica em mg total?",
-    kM: 70,
-    pM: 10,
+    medication: "doxiciclina",
+    targetScientificName: "Turdus rufiventris",
+    targetCommonName: "sabia-laranjeira",
+    targetGroupLabel: "ave passeriforme",
     dM: 15,
     kA: 129,
     pA: 0.075,
     type: "mg",
-  },
-  {
+  }),
+  createQuestion({
     id: "hard-chrysocyon-mg",
     difficulty: "hard",
-    context: "Chrysocyon brachyurus · modelo cavalo",
-    prompt:
-      "Um Chrysocyon brachyurus pesa 23 kg e usa K=70. O modelo e um cavalo de 500 kg, K=70, com dose de 2 mg/kg. Qual e a dose alometrica em mg total?",
-    kM: 70,
-    pM: 500,
+    medication: "omeprazol",
+    targetScientificName: "Chrysocyon brachyurus",
+    targetCommonName: "lobo-guara",
+    targetGroupLabel: "mamifero placentado",
     dM: 2,
     kA: 70,
     pA: 23,
     type: "mg",
-  },
-  {
+  }),
+  createQuestion({
     id: "hard-didelphis-interval",
     difficulty: "hard",
-    context: "Didelphis albiventris · intervalo com K diferente",
-    prompt:
-      "O modelo gato (4 kg, K=70) recebe a medicacao a cada 8 horas. Para uma Didelphis albiventris de 1,1 kg com K=49, qual deve ser o intervalo em horas? Use 1 casa decimal.",
-    kM: 70,
-    pM: 4,
+    medication: "fenobarbital",
+    targetScientificName: "Didelphis albiventris",
+    targetCommonName: "gamba-de-orelha-branca",
+    targetGroupLabel: "intervalo com K diferente",
     dM: 0,
     kA: 49,
     pA: 1.1,
     intM: 8,
     type: "interval",
-  },
-  {
+  }),
+  createQuestion({
     id: "hard-ramphastos-mgkg",
     difficulty: "hard",
-    context: "Ramphastos toco · ave nao-passeriforme",
-    prompt:
-      "Um Ramphastos toco pesa 0,62 kg e usa K=78. O modelo e um cao de 10 kg, K=70, com dose de 18 mg/kg. Qual e a dose final em mg/kg para o alvo?",
-    kM: 70,
-    pM: 10,
+    medication: "ceftiofur",
+    targetScientificName: "Ramphastos toco",
+    targetCommonName: "tucano-toco",
+    targetGroupLabel: "ave nao-passeriforme",
     dM: 18,
     kA: 78,
     pA: 0.62,
     type: "mgkg",
-  },
-  {
+  }),
+  createQuestion({
     id: "hard-myrmecophaga-mg",
     difficulty: "hard",
-    context: "Myrmecophaga tridactyla · xenarthra · modelo cavalo",
-    prompt:
-      "Um Myrmecophaga tridactyla pesa 28 kg e usa K=49. O modelo e um cavalo de 500 kg, K=70, com dose de 1,5 mg/kg. Qual e a dose alometrica em mg total?",
-    kM: 70,
-    pM: 500,
+    medication: "cetamina",
+    targetScientificName: "Myrmecophaga tridactyla",
+    targetCommonName: "tamandua-bandeira",
+    targetGroupLabel: "xenarthra",
     dM: 1.5,
     kA: 49,
     pA: 28,
     type: "mg",
-  },
+  }),
 ];

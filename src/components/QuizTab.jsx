@@ -23,6 +23,43 @@ import {
 } from "../utils/simulations";
 import SectionCard from "./SectionCard";
 
+function formatAnimalLabel(scientificName, commonName) {
+  return commonName
+    ? `${scientificName} (${commonName})`
+    : scientificName;
+}
+
+function QuestionSummary({ question }) {
+  const targetLabel = formatAnimalLabel(
+    question.targetScientificName,
+    question.targetCommonName,
+  );
+  const modelLabel = `${question.modelName} · ${question.pM} kg · K=${question.kM}`;
+
+  return (
+    <div className="question-summary">
+      <div className="question-summary-grid">
+        <div className="question-summary-item">
+          <span>Medicamento</span>
+          <strong>{question.medication}</strong>
+        </div>
+        <div className="question-summary-item">
+          <span>Animal alvo</span>
+          <strong>{targetLabel}</strong>
+        </div>
+        <div className="question-summary-item">
+          <span>Animal modelo</span>
+          <strong>{modelLabel}</strong>
+        </div>
+        <div className="question-summary-item">
+          <span>Categoria</span>
+          <strong>{question.targetGroupLabel}</strong>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HistoryCard({ simulation, isOpen, onToggle }) {
   return (
     <article className="history-card">
@@ -70,6 +107,7 @@ function HistoryCard({ simulation, isOpen, onToggle }) {
                   </div>
 
                   <p className="history-question-text">{question.prompt}</p>
+                  <QuestionSummary question={question} />
 
                   <div className="history-answer-grid">
                     <div>
@@ -294,6 +332,8 @@ export default function QuizTab() {
               <p>
                 Escolha a dificuldade, defina quantas questoes quer responder e
                 comece o treino com cronometro e salvamento automatico local.
+                Cada exercicio agora mostra medicamento, nome cientifico,
+                nome comum e o modelo de referencia mais proximo do alvo.
               </p>
             </div>
 
@@ -427,6 +467,8 @@ export default function QuizTab() {
         <div className="q-context">
           <strong>Contexto:</strong> {currentQuestion.context}
         </div>
+
+        <QuestionSummary question={currentQuestion} />
 
         <p className="q-text">
           <strong>
