@@ -120,6 +120,22 @@ select option { background: var(--surface2); }
 .btn-next.show { display: inline-block; }
 .btn-next:hover { border-color: var(--green); color: var(--green); }
 
+.scratch-wrap { margin-bottom: 14px; }
+.scratch-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+.scratch-label span { color: var(--muted); }
+.btn-clear-scratch { background: none; border: none; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 11px; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: color 0.2s; }
+.btn-clear-scratch:hover { color: var(--red); }
+textarea.scratch {
+  width: 100%; min-height: 130px; resize: vertical;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  line-height: 1.8; padding: 12px 14px; outline: none;
+  transition: border-color 0.2s;
+  caret-color: var(--green);
+}
+textarea.scratch:focus { border-color: var(--muted); }
+textarea.scratch::placeholder { color: rgba(122,152,128,0.45); font-style: italic; }
+
 .finish { text-align: center; padding: 28px 16px; }
 .finish-score { font-family: 'DM Serif Display', serif; font-size: 58px; color: var(--green); }
 .finish-msg { color: var(--muted); margin-top: 8px; font-size: 14px; }
@@ -171,7 +187,7 @@ td:first-child { font-weight: 700; color: var(--yellow); }
     <div class="method-step hl">
       <div class="step-num">3</div>
       <div class="step-body">
-        <div class="step-name">Dose por Kcal ← aqui ela trava</div>
+        <div class="step-name">Dose por Kcal</div>
         <div class="step-formula">Dose/Kcal = Dose_total_modelo ÷ TMB_modelo</div>
         <div class="step-desc">Normaliza a dose pela "energia" do modelo — mg por cada Kcal/24h</div>
       </div>
@@ -378,7 +394,7 @@ function switchTab(t) {
   });
 }
 function fmt(n,d=4){ return parseFloat(n.toFixed(d)); }
-function tmb(K,M){ return K*Math.pow(M,0.75); }
+function tmb(K,M){ return K*M ** 0.75; }
 
 function calcular() {
   const kMv=parseFloat(document.getElementById('kM').value);
@@ -506,9 +522,17 @@ function renderQ(){
   document.getElementById('progFill').style.width=pct+'%';
   document.getElementById('scorePill').textContent=`${sc} / ${qi}`;
   const unit=q.type==='interval'?'horas':q.type==='mgkg'?'mg/kg':'mg total';
+  const placeholder=`Faça seus cálculos aqui como se fosse a prova...\n\nEx:\n1. Dose total = ${q.type!=='interval'?q.dM+' × '+q.pM+' = ?':'TMB modelo = '+q.kM+' × '+q.pM+'^0,75 = ?'}\n2. TMB modelo = ?\n3. TMB alvo = ?\n...`;
   document.getElementById('quizBody').innerHTML=`
     <div class="q-context"><strong>Contexto:</strong> ${q.ctx}</div>
     <p class="q-text"><strong>Questão ${qi+1}/${Qs.length}</strong><br><br>${q.q}</p>
+    <div class="scratch-wrap">
+      <div class="scratch-label">
+        <span>// rascunho</span>
+        <button class="btn-clear-scratch" onclick="document.getElementById('scratch').value=''">limpar</button>
+      </div>
+      <textarea class="scratch" id="scratch" placeholder="${placeholder}" spellcheck="false"></textarea>
+    </div>
     <div class="answer-row">
       <input type="number" id="ansInp" placeholder="Sua resposta (${unit})" step="0.0001"
         onkeydown="if(event.key==='Enter')checkQ()">
@@ -518,7 +542,7 @@ function renderQ(){
     <button class="btn-next" id="btnN" onclick="nextQ()">
       ${qi+1<Qs.length?'Próxima →':'Ver resultado →'}
     </button>`;
-  document.getElementById('ansInp').focus();
+  document.getElementById('scratch').focus();
 }
 function checkQ(){
   if(ans)return; ans=true;
